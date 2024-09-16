@@ -306,13 +306,14 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
         export ZONE_1=(`gcloud compute regions describe ${REGION} --format=json | jq -r .zones[1] | cut -d "/" -f9`)
         export ZONE_2=(`gcloud compute regions describe ${REGION} --format=json | jq -r .zones[2] | cut -d "/" -f9`)
 ```
-      
+
     These environment variables will be required for the upcoming commands as they call these variables in them, so be sure to set these.
 
 
 25. Now we create the internal loadbalancer component that will be used for api related communication by the cluster nodes. The following commands will create the load balancer, its corresponding health check component, as well as the backend empty instance groups into which the master nodes will be put into at the time of Master nodes creation in a later step.
     1. Create the `.yaml` file
-       ```
+
+```
            cat <<EOF >02_infra.yaml
            imports:
            - path: 02_lb_int.py 
@@ -329,10 +330,11 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
                - '${ZONE_1}'
                - '${ZONE_2}'
            EOF
-       ```
+```
+
     2. Create the corresponding GCP object:
     
-          ``` gcloud deployment-manager deployments create ${INFRA_ID}-infra --config 02_infra.yaml```
+        gcloud deployment-manager deployments create ${INFRA_ID}-infra --config 02_infra.yaml
            
            
 26. We now need to get the Cluster IP. This is basically the loadbalancer IP that we created in the previous step. This IP is used as the Host IP addresses for the DNS record sets that will be put into our private DNS zone. 
@@ -361,10 +363,10 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 30. Now let’s create 2 google cloud buckets. One will be for storing the bootstrap.ign file for the bootstrap node, and the other will be the one to store the RedHat Coreos image that the cluster nodes will pull to boot up from.
     1. Bucket to store bootstrap.ign file.
     
-          ```
+```
            gsutil mb gs://${INFRA_ID}-bootstrap-ignition
            gsutil cp install_dir/bootstrap.ign gs://${INFRA_ID}-bootstrap-ignition/
-          ```
+```
            
     2. Bucket to store RedHat Coreos file. Please take note that in the below commands, the filename of the rhcos image is `rhcos-gcp-x86_64.tar.gz`. In your case the name might be different, so please replace the value accordingly. Also, the bucket names need to be unique globally, so in your case, you might be unable to use the bucket name as *'ocp4gcpbucket'*, instead you can use any other arbitrary name of your choice, and just ensure you replace the the name correctly in any of the commands referencing the bucket name.
 
