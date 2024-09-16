@@ -1,24 +1,12 @@
 # OpenShift 4.X installation on GCP using UPI method
 
-*UPDATE (30th July 2024) : Committed a new deployment configuration file named `07_worker_with_2_interfaces.py` that allows you to deploy workers with 2 network interfaces. Useful for getting a good hands on with attaching multiple networks to your OCP clusters for OpenShift Virtualization. However, keep in mind that OpenShift Virtualization requires Baremetal hosts, and using instance types that provide Nested Virtualization might lead issues with VMs coming up <--- I personally ran into the same issue. Also, GCP has made some UI changes, and the "Hybrid Connectivity" section seems to have been replaced with the name "Network Connectivity"*
-
-*UPDATE (6th September 2023) : Recently, you might notice gcloud commands failing due to permission errors, this is because the gcloud CLI now requires you to login using the `gcloud auth` command. The step no.19 in this exercise has been updated to reflect the same.*
-
-*UPDATE (14th September 2022) : The exercise demonstrated in this GitHub project uses OpenShift version 4.10.3. However, it can also be used as a guide for installing almost any 4.10.x as well as 4.11.1 version of OpenShift on GCP using the UPI Method. Tested at my end, and it works perfectly on 4.11.1 as well. Some GCP UI changes might be seen now, however these are very minor and shouldn't have much impact on the installation flow.*
-
-This guide is intended to walk you through a step-by-step procedure of deploying a 5 node (3 Masters & 2 Workers) OCP 4.10 cluster on GCP using the User-Provisioned-Infrastructure (UPI) method. It will help you understand what goes into deploying an OpenShift cluster from scratch all the way from setting up the infra components up to the actual OpenShift software installation.
-
-We have selected GCP as our infrastructure platform, mainly because it offers some free credits upon account creation to get yourself familiarized with the platform. This is more than enough to get our RedHat OpenShift Container Platform 4.10 up and running seamlessly using the UPI method at no cost at all.
+This guide is intended to walk you through a step-by-step procedure of deploying a 5 node (3 Masters & 2 Workers) OCP 4.10 cluster on GCP using the User-Provisioned-Infrastructure (UPI) method. It will help you understand what goes into deploying an OpenShift cluster from scratch all the way from setting up the infra components up to the actual OpenShift software installation. Tested on 4.10.x as well as 4.11.1 version of OpenShift on GCP using the UPI method.
 
 This guide also covers a lot of basics including the creation of basic GCP components like projects, networks etc. So, if you are comfortable with provisioning your infrastructure components yourself, feel free to skip over to the [openshift installation](https://github.com/cloudcafetech/OCP4X-GCP-UPI/blob/main/README.md#openshift-installation)  process directly. It would still be recommended to follow through this document entirely to avoid any unexpected issues.
 
 The procedure and steps described in this document have been taken mainly from the official RedHat documentation for OpenShift (https://docs.openshift.com/container-platform/4.10/installing/installing_gcp/installing-restricted-networks-gcp.html), with a few tweaks of my own.
 
-YouTube video demonstrating this exercise : https://www.youtube.com/watch?v=DdWCL4eE0vM
-
 Some changes have been made to the original steps described in the official docs. These are mainly the creation of networks, subnetworks, DNS zones, Cloud NATs – for which we will walk you through the steps to be performed on the UI, instead of the CLI. The idea is to understand how the cluster looks from the ground up. 
-
-We will also be skipping the steps of the intermediate service accounts required for worker & master nodes, instead we will be using the same service account that we will be creating initially for authentication and authorization.
 
 *Do note that this is a private cluster deployment, and the cluster will only be accessible via the bastion host. This is why we do not use any public DNS in this installation, but only private DNS zone. We will however configure external UI access with the help of a reverse proxy.*
 
@@ -599,6 +587,12 @@ Once this is done, run a `watch oc get co`, and you should start seeing all your
 Your OpenShift 4.X cluster is now up and running. You can login to your UI using the username of 'kubeadmin' and the password present in `install_dir/auth/kubeadmin-password`
 
 [Ref#1](https://github.com/Hamza-Mandviwala/OCP4.10.3-install-GCP-UPI)
+
+*UPDATE (30th July 2024) : Committed a new deployment configuration file named `07_worker_with_2_interfaces.py` that allows you to deploy workers with 2 network interfaces. Useful for getting a good hands on with attaching multiple networks to your OCP clusters for OpenShift Virtualization. However, keep in mind that OpenShift Virtualization requires Baremetal hosts, and using instance types that provide Nested Virtualization might lead issues with VMs coming up <--- I personally ran into the same issue. Also, GCP has made some UI changes, and the "Hybrid Connectivity" section seems to have been replaced with the name "Network Connectivity"*
+
+*UPDATE (6th September 2023) : Recently, you might notice gcloud commands failing due to permission errors, this is because the gcloud CLI now requires you to login using the `gcloud auth` command. The step no.19 in this exercise has been updated to reflect the same.*
+
+[Youtube](https://www.youtube.com/watch?v=DdWCL4eE0vM)
 
 ## Helpful links:
 
