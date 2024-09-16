@@ -27,7 +27,7 @@ Some changes have been made to the original steps described in the official docs
 
 <img width="1792" alt="flowdiagram" src="https://user-images.githubusercontent.com/53118271/157832070-351606fa-92fd-45b7-96a2-e3fa7d83ddb0.png">
 
-The above diagram illustrates the basic flow in which we will be deploying our OCP 4.10 cluster on GCP. We first create a bastion host, and from that host, we will be running all the necessary commands to setup the bootstrap node, followed by the Master nodes, and finally the worker nodes in a different subnet.
+The above diagram illustrates the basic flow in which we will be deploying our OCP 4.X cluster on GCP. We first create a bastion host, and from that host, we will be running all the necessary commands to setup the bootstrap node, followed by the Master nodes, and finally the worker nodes in a different subnet.
 
 Before we begin the bootstrap process, we will be creating some prerequisite infrastructure components like network, subnetworks, IAM service account, IAM Project, Private DNS zone, Load balancers, Cloud NATs & a Cloud Router.
 
@@ -68,14 +68,14 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
 ### Creating GCP Infra components
 
-1. Create a GCP project inside our GCP console. We have a project named ‘ocp-project’ created already, and this will be used to host the OCP 4.10 cluster.
+1. Create a GCP project inside our GCP console. We have a project named ‘ocp4gcp-project’ created already, and this will be used to host the OCP 4.X cluster.
    1. Go to **IAM & Admin** > **Create a Project**.
    2. Enter the project name & organization and click on *Create*.
 
 2. Create a service account under IAM:
    1. Go to **IAM & admin** > **Service Accounts**
    2.	Click on **Create Service Account** and enter the relevant details:
-         1.	Service Account name: *ocp-serviceaccount* (you can use any service account name of your choice)
+         1.	Service Account name: *ocp4gcp-sa* (you can use any service account name of your choice)
          2.	Grant access to the necessary roles per the documentation. I have assigned it the **owner** role since I will be using this service account myself. It is however not recommended to grant the ‘owner’ role to the service account as it grants administrative privileges (full access) across your GCP account, and is not a security best practise. Do refer the necessary roles that the service account requires access to.
          3.	Click **Done**.
          4.	Once your service account is created, we need its json key to be used for authentication & authorization of gcp objects creation:
@@ -87,16 +87,16 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
 3. Create a Network from the GCP UI Console:
    1.	Go to **VPC Networks** > **Create VPC Networks**
-   2. Put in the appropriate network name. *ocp-network* is used in this exercise. (NOTE : *if you want to use different names for the network & subnetworks, and different IP subnet ranges; please ensure you also edit the sample-install-config.yaml file accordingly so that it contains the correct network & subnetwork names as well as the correct IP subnet ranges.*)
+   2. Put in the appropriate network name. *ocp4gcp-network* is used in this exercise. (NOTE : *if you want to use different names for the network & subnetworks, and different IP subnet ranges; please ensure you also edit the sample-install-config.yaml file accordingly so that it contains the correct network & subnetwork names as well as the correct IP subnet ranges.*)
    3. Add 2 new subnets within this network:
          1. For the Master Nodes & Bootstrap node:
-             1. Name: master-subnet
+             1. Name: ocp4gcp-master-subnet
              2. Region: asia-northeast1 (*you can choose any region of your choice. In this exercise , asia-northeast1 is the nearest to my location and provides all necessary resource limits*)
              3. Subnet range: 10.1.10.0/24
              4.	Private Google Access: On
              5.	Flow Logs: Off
          2.	For the worker nodes:
-             1.	Name: worker-subnet
+             1.	Name: ocp4gcp-worker-subnet
              2.	Region: asia-northeast1 (*you can choose any region of your choice. In this exercise , asia-northeast1 is the nearest to my location and provides all necessary resource limits*)
              3.	Subnet Range: 10.1.20.0/24
              4.	Private Google Access: On
@@ -109,7 +109,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
    2. Enter the relevant details:
          1. Name: *allow-all-bastion*
          2. Logs: Off
-         3. Network: ocp-network
+         3. Network: ocp4gcp-network
          4. Priority: 100
          5. Direction of Traffic: Ingress
          6. Action on Match: Allow
@@ -124,8 +124,8 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
    1. Go to **‘Hybrid Connectivity’** > **‘Cloud Routers’**. (If *'Hybrid Connectivity'* option is not there in your left navigation menu, click on 'MORE PRODUCTS' option from the left navigation menu >  scroll down and you should find *'Hybrid Connectivity'* option. Click on the 'pin' icon so that it can be pinned to your pinned services list)
    2. Click on **‘Create Router’**.
    3.	Enter the relevant details:
-         1. Name: ocp-router
-         2. Network: ocp-network
+         1. Name: ocp4gcp-router
+         2. Network: ocp4gcp-network
          3. Region: asia-northeast1
          4. Select *“Advertise all subnets visible to the Cloud Router (Default)”*.
          5. Click **Create**..
@@ -133,27 +133,27 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 6. Create 2 Cloud NAT components connected to the router we created above, for both of our subnets created earlier.
    1. Go to **‘Network Services’** > **‘Cloud NAT’**. (If *'Network Services'* option is not there in your left navigation menu, click on 'MORE PRODUCTS' option from the left navigation menu >  scroll down and you should find *'Network Services'* option. Click on the 'pin' icon so that it can be pinned to your pinned services list)
    2. Enter the relevant details:
-         1. Gateway Name: ocp-nat-master-gw
-         2. Network: ocp-network
+         1. Gateway Name: ocp4gcp-nat-master-gw
+         2. Network: ocp4gcp-network
          3. Region: asia-northeast1
-         4. Cloud Router: ocp-router (this is the name of the cloud router we created in the previous step)
+         4. Cloud Router: ocp4gcp-router (this is the name of the cloud router we created in the previous step)
          5. NAT Mapping  
              1. Source: Custom
-             2. Subnets: master-subnet
+             2. Subnets: ocp4gcp-master-subnet
              3. NAT IP Addresses: Automatic
    3. Click **Create** .
-   4. Repeat steps i, ii & iii again for the worker-subnet, and ensure you change the Gateway Name to ocp-nat-worker-gw for example. And ensure both Cloud NATs are connected to the same Cloud Router.
+   4. Repeat steps i, ii & iii again for the ocp4gcp-worker-subnet, and ensure you change the Gateway Name to ocp-nat-worker-gw for example. And ensure both Cloud NATs are connected to the same Cloud Router.
 
 7. Create a private DNS zone from the GCP UI:
    1. Go to **‘Network Services’** > **‘Cloud DNS’**.
    2. Click on **‘Create Zone’** and enter the relevant details:
          1. Zone type: Private
-         2. Zone name: ocp-private-zone (you can use any name of your choice)
+         2. Zone name: ocp4gcp-private-zone (you can use any name of your choice)
          3. DNS name: ocp4gcp.cloudcafe.tech (The DNS name consists of a combination of the cluster name & base domain i.e <cluster_name>.<base_domain> . In this example ‘hamzacluster’ is the name of my cluster and ‘openshift.com’ is the base domain that I will be using. Ensure you enter the values correctly as the cluster name & base domain you specify here will be the same that will have to be used in the install-config.yaml file later.
-         4. Network: ocp-network (this needs to be the network we created earlier within which our master-subnet & worker-subnet reside)
+         4. Network: ocp4gcp-network (this needs to be the network we created earlier within which our ocp4gcp-master-subnet & ocp4gcp-worker-subnet reside)
          5.	Click **‘Create’**.
 
-8. Create a bastion host in the master-subnet of the ocp-network we created earlier. Bastion host is basically a normal VM instance that can be used to log into and run the necessary commands from. Ensure it has an external IP assigned to it as we will be ssh’ing into it and run all the necessary commands from there.
+8. Create a bastion host in the ocp4gcp-master-subnet of the ocp4gcp-network we created earlier. Bastion host is basically a normal VM instance that can be used to log into and run the necessary commands from. Ensure it has an external IP assigned to it as we will be ssh’ing into it and run all the necessary commands from there.
    1. Go to **Compute Engine** > **‘VM Instances’** > **‘Create Instance’**.
    2. Put in the relevant details: Instance name, type (e2-medium is used for my demo), region, zone.
    3.	For the boot disk, I have used Ubuntu 18.04 OS with 50 GB disk size.
@@ -164,7 +164,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
    6.	For the Networking:
          1. Network Tags: *'bastion'* (Ensure you set this tag, so that the firewall rule we created in step 4 above is applicable to this bastion host)
          2. Assign a hostname of your choice. 
-         3. Connect the network interface to the ocp-network, and subnet of master-subnet. You can set both Primary Internal IP & External IP to ‘Ephemeral’.
+         3. Connect the network interface to the ocp4gcp-network, and subnet of ocp4gcp-master-subnet. You can set both Primary Internal IP & External IP to ‘Ephemeral’.
          4.	Keep IP forwarding enabled.
          5. Network Interface Card: VirtIO
    7.	Under **‘Security’** > **‘Manage Access’** -  ensure you add a ssh public key that allows you to ssh into the bastion host from your local machine.
@@ -178,10 +178,14 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
        sudo su -
 10. Copy over the downloaded json key (from step 2 above) to your bastion host, and save it by the name of `service-account-key.json`, as this is the service account key filename referenced in some of our commands later in this exercise. You can choose any name, just ensure you edit the commands accordingly.
 
-11. Download some important packages:
+11. Download some important packages including gcloud cli binary (Can be downloaded from [here](https://cloud.google.com/sdk/docs/install))
 
-        sudo apt update
-        sudo apt install wget git -y
+        apt update -y
+        apt install wget git jq -y
+        wget -q https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-470.0.0-linux-x86_64.tar.gz
+        tar -xf google-cloud-cli-470.0.0-linux-x86_64.tar.gz
+        ./google-cloud-sdk/install.sh
+        ./google-cloud-sdk/bin/gcloud init
     
 12. Download the necessary cli binaries & files from your [RedHat Cluster Manager](https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?client_id=cloud-services&redirect_uri=https%3A%2F%2Fconsole.redhat.com%2F&state=1b3b6ba7-b426-4319-9197-8d4be1f14e5f&response_mode=fragment&response_type=code&scope=openid&nonce=72beef5c-277a-4dd7-a840-721e8eddbcac) login page onto the bastion host (you can use the wget tool to directly download onto your bastion host, or simply download them and copy over to your bastion host using scp):
     1. openshift-install cli binary
@@ -189,14 +193,19 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
     3.	kubectl cli binary
     4.	RedHat Coreos image
     5.	Pull Secret
-    6.	gcloud cli binary (Can be downloaded from [here](https://cloud.google.com/sdk/docs/install))
-    7.	jq binary `sudo apt install jq -y`
 
-13. Once downloaded and extracted, copy the openshift-install, oc & kubectl binary into /usr/local/bin/ directory (Or whatever the $PATH you have configured on your bastion host).
+13. Download and extracted, copy the openshift-install, oc & kubectl binary into /usr/local/bin/ directory (Or whatever the $PATH you have configured on your bastion host).
         
+	OCPVER=4.14.34
+	OCPVERM=4.14
+        curl -s -o rhcos-gcp-x86_64.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/$OCPVERM/$OCPVER/rhcos-$OCPVER-x86_64-gcp.x86_64.tar.gz
+	curl -s -o openshift-install-linux.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/$OCPVER/openshift-install-linux.tar.gz
+	curl -s -o openshift-client-linux.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/$OCPVER/openshift-client-linux.tar.gz
         tar xvf openshift-install-linux.tar.gz
         tar xvf openshift-client-linux.tar.gz
         mv oc kubectl openshift-install /usr/local/bin/
+	rm -rf openshift-install-linux.tar.gz
+	rm -rf openshift-client-linux.tar.gz
 
 
 14. Generate a new ssh key pair on your bastion host keeping all default options. The public key from this key pair will be inserted in your install-config.yaml file. Your cluster nodes will be injected with this ssh key and you will be able to ssh into them later for any kind of monitoring & troubleshooting.
@@ -266,11 +275,11 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
           
 24. Set the environment variables for your environment. Please set the values as per your needs.
 
-        export BASE_DOMAIN=openshift.com
-        export BASE_DOMAIN_ZONE_NAME=ocp-private-zone
-        export NETWORK=ocp-network
-        export MASTER_SUBNET=master-subnet
-        export WORKER_SUBNET=worker-subnet
+        export BASE_DOMAIN=cloudcafe.tech
+        export BASE_DOMAIN_ZONE_NAME=ocp4gcp-private-zone
+        export NETWORK=ocp4gcp-network
+        export MASTER_SUBNET=ocp4gcp-master-subnet
+        export WORKER_SUBNET=ocp4gcp-worker-subnet
         export NETWORK_CIDR='10.1.0.0/16'
         export MASTER_SUBNET_CIDR='10.1.10.0/24'
         export WORKER_SUBNET_CIDR='10.1.20.0/24'
@@ -320,15 +329,15 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 27. We now create the required record sets for api communication among the cluster nodes.
 
         if [ -f transaction.yaml ]; then rm transaction.yaml; fi
-        gcloud dns record-sets transaction start --zone ocp-private-zone
-        gcloud dns record-sets transaction add ${CLUSTER_IP} --name api.${CLUSTER_NAME}.${BASE_DOMAIN}. --ttl 60 --type A --zone ocp-private-zone
-        gcloud dns record-sets transaction add ${CLUSTER_IP} --name api-int.${CLUSTER_NAME}.${BASE_DOMAIN}. --ttl 60 --type A --zone ocp-private-zone
-        gcloud dns record-sets transaction execute --zone ocp-private-zone
+        gcloud dns record-sets transaction start --zone ocp4gcp-private-zone
+        gcloud dns record-sets transaction add ${CLUSTER_IP} --name api.${CLUSTER_NAME}.${BASE_DOMAIN}. --ttl 60 --type A --zone ocp4gcp-private-zone
+        gcloud dns record-sets transaction add ${CLUSTER_IP} --name api-int.${CLUSTER_NAME}.${BASE_DOMAIN}. --ttl 60 --type A --zone ocp4gcp-private-zone
+        gcloud dns record-sets transaction execute --zone ocp4gcp-private-zone
        
 28. Let’s export the service account emails as these will be called inside the deployment manager templates of our master & worker nodes. In our demo, we will be using the same service account we created earlier:
 
-        export MASTER_SERVICE_ACCOUNT=(`gcloud iam service-accounts list --filter "email~^ocp-serviceaccount@${PROJECT_NAME}." --format json | jq -r '.[0].email'`)
-        export WORKER_SERVICE_ACCOUNT=(`gcloud iam service-accounts list --filter "email~^ocp-serviceaccount@${PROJECT_NAME}." --format json | jq -r '.[0].email'`)
+        export MASTER_SERVICE_ACCOUNT=(`gcloud iam service-accounts list --filter "email~^ocp4gcp-sa@${PROJECT_NAME}." --format json | jq -r '.[0].email'`)
+        export WORKER_SERVICE_ACCOUNT=(`gcloud iam service-accounts list --filter "email~^ocp4gcp-sa@${PROJECT_NAME}." --format json | jq -r '.[0].email'`)
      
      If the above commands do not set the correct service account email ENV variable, you can try running `gcloud iam service-accounts list`, copy the email address for your service account from the output's email column and manually set it as the environment variable for both `MASTER_SERVICE_ACCOUNT` & `WORKER_SERVICE_ACCOUNT`.
      
@@ -338,11 +347,11 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
            gsutil mb gs://${INFRA_ID}-bootstrap-ignition
            gsutil cp install_dir/bootstrap.ign gs://${INFRA_ID}-bootstrap-ignition/
            
-    2. Bucket to store RedHat Coreos file. Please take note that in the below commands, the filename of the rhcos image is `rhcos-4.10.3-x86_64-gcp.x86_64.tar.gz`. In your case the name might be different, so please replace the value accordingly. Also, the bucket names need to be unique globally, so in your case, you might be unable to use the bucket name as *'rhcosbucket'*, instead you can use any other arbitrary name of your choice, and just ensure you replace the the name correctly in any of the commands referencing the bucket name.
+    2. Bucket to store RedHat Coreos file. Please take note that in the below commands, the filename of the rhcos image is `rhcos-gcp-x86_64.tar.gz`. In your case the name might be different, so please replace the value accordingly. Also, the bucket names need to be unique globally, so in your case, you might be unable to use the bucket name as *'ocp4gcpbucket'*, instead you can use any other arbitrary name of your choice, and just ensure you replace the the name correctly in any of the commands referencing the bucket name.
 
-           gsutil mb gs://rhcosbucket/
-           gsutil cp rhcos-4.10.3-x86_64-gcp.x86_64.tar.gz gs://rhcosbucket/
-           export IMAGE_SOURCE=gs://rhcosbucket/rhcos-4.10.3-x86_64-gcp.x86_64.tar.gz
+           gsutil mb gs://ocp4gcpbucket/
+           gsutil cp rhcos-gcp-x86_64.tar.gz gs://ocp4gcpbucket/
+           export IMAGE_SOURCE=gs://ocp4gcpbucket/rhcos-gcp-x86_64.tar.gz
            gcloud compute images create "${INFRA_ID}-rhcos-image" --source-uri="${IMAGE_SOURCE}"
            
 30. Let’s set the CLUSTER_IMAGE env to be called later by the node creation commands.
@@ -493,8 +502,8 @@ NOTE: *The steps in this section are needed so that we can have a single IP addr
     2. Click on **‘Create Instance Group’** and select **‘New unmanaged instance group’**.
     3. Enter the relevant details like name, region & zone. Ensure region & zone is the same as where our worker nodes reside.
     4. For networking options:
-       1.	Network: ocp-network (Name of your network that hosts the cluster)
-       2. Subnetwork: worker-subnet (needs to be the name of your worker nodes subnet)
+       1.	Network: ocp4gcp-network (Name of your network that hosts the cluster)
+       2. Subnetwork: ocp4gcp-worker-subnet (needs to be the name of your worker nodes subnet)
        3. VM Instances: Select one of the worker nodes from the drop-down list.
     5. Click **‘Create’**.
     6.	Repeat steps i., ii., iii.,iv. & v. for creating a second instance group that will have the second worker node in it. 
@@ -507,7 +516,7 @@ NOTE: *The steps in this section are needed so that we can have a single IP addr
        2. Multiple regions or Single region: *Single Region* 
        3. Click **‘Continue’**
     4. Enter the name & region.
-    5. For the network, select your network name to which your VM Instances are connected. (‘ocp-network ‘in this exercise).
+    5. For the network, select your network name to which your VM Instances are connected. (‘ocp4gcp-network ‘in this exercise).
     6. For **Backend Configuration**:
        1. Select one of the instance groups we created in the previous step, click Done.
        2. Add another backend by selecting the second instance group we created in the previous step, click Done.
@@ -522,7 +531,7 @@ NOTE: *The steps in this section are needed so that we can have a single IP addr
               8. Click **Save**.
     7. For the **Frontend Configuration**:
        1. You can give it a name if you want to, we have left it blank for this exercise.
-       2. Subnetwork: master-subnet
+       2. Subnetwork: ocp4gcp-master-subnet
        3. Internal IP – Purpose: Shared
           1. IP Address: Ephemeral (Automatic)
        4. Ports: All
