@@ -83,7 +83,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
              2. Go to the **keys** tab.
              3. Click on **Add key** > **Create New Key** and follow the instructions to create and download the json key.
 
-**NOTE : Now that your project is created, first please enable the [necessary APIs](https://docs.openshift.com/container-platform/4.14/installing/installing_gcp/installing-restricted-networks-gcp.html#installation-gcp-enabling-api-services_installing-restricted-networks-gcp)  and then ensure you have the [necessary limits](https://docs.openshift.com/container-platform/4.14/installing/installing_gcp/installing-gcp-user-infra.html#installation-gcp-limits_installing-gcp-user-infra) within your project. If you have newly created a GCP account, you might be able to edit your quotas only after 48 hours have passed by since account creation.**
+**NOTE : Now that your project is created, first please enable the [necessary APIs](https://docs.openshift.com/container-platform/4.10/installing/installing_gcp/installing-restricted-networks-gcp.html#installation-gcp-enabling-api-services_installing-restricted-networks-gcp)  and then ensure you have the [necessary limits](https://docs.openshift.com/container-platform/4.10/installing/installing_gcp/installing-gcp-user-infra.html#installation-gcp-limits_installing-gcp-user-infra) within your project. If you have newly created a GCP account, you might be able to edit your quotas only after 48 hours have passed by since account creation.**
 
 3. Create a Network from the GCP UI Console:
    1.	Go to **VPC Networks** > **Create VPC Networks**
@@ -373,7 +373,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
            gsutil cp rhcos-gcp-x86_64.tar.gz gs://ocp4gcpbucket/
            export IMAGE_SOURCE=gs://ocp4gcpbucket/rhcos-gcp-x86_64.tar.gz
            gcloud compute images create "${INFRA_ID}-rhcos-image" --source-uri="${IMAGE_SOURCE}"
- ```
+```
           
 31. Let’s set the CLUSTER_IMAGE env to be called later by the node creation commands.
 
@@ -384,9 +384,10 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
         export BOOTSTRAP_IGN=`gsutil signurl -d 1h service-account-key.json gs://${INFRA_ID}-bootstrap-ignition/bootstrap.ign | grep "^gs:" | awk '{print $5}'`
 
 33. Now we create the bootstrap node itself using the relevant Deployment Manager template. The below commands will create the bootstrap node, a public IP for it, and an empty instance group for the bootstrap node:
-    1. Create the `.yaml` config file for the bootstrap node deployment:
+    
+1. Create the `.yaml` config file for the bootstrap node deployment:
 
-    ```
+```
            cat <<EOF >04_bootstrap.yaml
            imports:
            - path: 04_bootstrap.py
@@ -427,6 +428,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
            export MASTER_IGNITION=`cat install_dir/master.ign` 
 
     2. Create the `.yaml` config file for the master nodes deployment:
+
 ```
            cat <<EOF >05_control_plane.yaml
            imports:
@@ -450,7 +452,8 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
                ignition: '${MASTER_IGNITION}' 
            EOF
-```      
+```    
+  
       3. Run the command to create the master nodes:
     
         gcloud deployment-manager deployments create ${INFRA_ID}-control-plane --config 05_control_plane.yaml
@@ -479,7 +482,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 39. Now we are good to create the worker nodes. Note that if we run an `oc get co` command from the bastion host at this time, we will still see a few operators as *'unavailable'*, typically the ingress, console, authentication, and a few other cluster operators. This is because they depend on some components which need to come up on the worker nodes. For example, the ingress cluster operator will deploy the router pods on the worker nodes by default, and only then will a route to the console be created, and eventually the authentication operator would also reach completion.
     1. Set the env variable for the worker ignition config file.
 
-           ```export WORKER_IGNITION=`cat install_dir/worker.ign` ```
+           export WORKER_IGNITION=`cat install_dir/worker.ign` 
 
     2. Create the *.yaml* file for the worker nodes deployment.
 
