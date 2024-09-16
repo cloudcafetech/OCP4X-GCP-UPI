@@ -83,7 +83,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
              2. Go to the **keys** tab.
              3. Click on **Add key** > **Create New Key** and follow the instructions to create and download the json key.
 
-**NOTE : Now that your project is created, first please enable the [necessary APIs](https://docs.openshift.com/container-platform/4.10/installing/installing_gcp/installing-restricted-networks-gcp.html#installation-gcp-enabling-api-services_installing-restricted-networks-gcp)  and then ensure you have the [necessary limits](https://docs.openshift.com/container-platform/4.10/installing/installing_gcp/installing-gcp-user-infra.html#installation-gcp-limits_installing-gcp-user-infra) within your project. If you have newly created a GCP account, you might be able to edit your quotas only after 48 hours have passed by since account creation.**
+**NOTE : Now that your project is created, first please enable the [necessary APIs](https://docs.openshift.com/container-platform/4.14/installing/installing_gcp/installing-restricted-networks-gcp.html#installation-gcp-enabling-api-services_installing-restricted-networks-gcp)  and then ensure you have the [necessary limits](https://docs.openshift.com/container-platform/4.14/installing/installing_gcp/installing-gcp-user-infra.html#installation-gcp-limits_installing-gcp-user-infra) within your project. If you have newly created a GCP account, you might be able to edit your quotas only after 48 hours have passed by since account creation.**
 
 3. Create a Network from the GCP UI Console:
    1.	Go to **VPC Networks** > **Create VPC Networks**
@@ -216,23 +216,23 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
 13. Generate a new ssh key pair on your bastion host keeping all default options. The public key from this key pair will be inserted in your install-config.yaml file. Your cluster nodes will be injected with this ssh key and you will be able to ssh into them later for any kind of monitoring & troubleshooting.
              
-        ```ssh-keygen```
+        ssh-keygen
       
 14. Clone this repository. This contains the necessary .py files required to build the cluster components like load balancers & VM instances.
 
-        ```git clone https://github.com/cloudcafetech/OCP4X-GCP-UPI.git```
+        git clone https://github.com/cloudcafetech/OCP4X-GCP-UPI.git
         
     Also let's copy the Deployment Manager Templates (i.e the .py files, to the current working directory)
     
-        ```cp ~/OCP4X-GCP-UPI/deployment_manager_templates/* ~/ ```
+        cp ~/OCP4X-GCP-UPI/deployment_manager_templates/* ~/ 
         
 15. Create an installation directory which will be used to generate the manifests & ignition config files.
 
-        ```mkdir install_dir```
+        mkdir install_dir
 
 16. Copy the sample-install-config.yaml file into the installation directory.
 
-        ```cp ~/OCP4X-GCP-UPI/sample-install-config.yaml ~/install_dir/install-config.yaml```
+        cp ~/OCP4X-GCP-UPI/sample-install-config.yaml ~/install_dir/install-config.yaml
         
 17. Edit the copied install-config.yaml as per your environment. The important changes are:
     1. Base Domain value (Needs to be the same as specified in your private DNS zone)
@@ -250,12 +250,12 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
         
 21. Create the manifest files for your OpenShift cluster.
 
-        ```openshift-install create manifests --dir install_dir/```
+        openshift-install create manifests --dir install_dir/
     
 22. The manifests need some changes to be made as follows:
     1. Open the file install_dir/manifests/cluster-ingress-default-ingresscontroller.yaml 
 
-           ```vi install_dir/manifests/cluster-ingress-default-ingresscontroller.yaml```
+         vi install_dir/manifests/cluster-ingress-default-ingresscontroller.yaml
            
     2. Under spec.endpointPublishingStrategy :
        1. Remove the ‘loadbalancer’ parameter completely so that only the ‘type’ section remains.
@@ -281,7 +281,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
 23. Now let’s create the ignition config files.
 
-        ```openshift-install create ignition-configs --dir install_dir/```
+        openshift-install create ignition-configs --dir install_dir/
           
 24. Set the environment variables for your environment. Please set the values as per your needs.
 
@@ -337,17 +337,17 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
            
 26. We now need to get the Cluster IP. This is basically the loadbalancer IP that we created in the previous step. This IP is used as the Host IP addresses for the DNS record sets that will be put into our private DNS zone. 
 
-        ```export CLUSTER_IP=(`gcloud compute addresses describe ${INFRA_ID}-cluster-ip --region=${REGION} --format json | jq -r .address`)```
+        export CLUSTER_IP=(`gcloud compute addresses describe ${INFRA_ID}-cluster-ip --region=${REGION} --format json | jq -r .address`)
         
 27. We now create the required record sets for api communication among the cluster nodes.
 
-        ```
+```
         if [ -f transaction.yaml ]; then rm transaction.yaml; fi
         gcloud dns record-sets transaction start --zone ocp4gcp-private-zone
         gcloud dns record-sets transaction add ${CLUSTER_IP} --name api.${CLUSTER_NAME}.${BASE_DOMAIN}. --ttl 60 --type A --zone ocp4gcp-private-zone
         gcloud dns record-sets transaction add ${CLUSTER_IP} --name api-int.${CLUSTER_NAME}.${BASE_DOMAIN}. --ttl 60 --type A --zone ocp4gcp-private-zone
         gcloud dns record-sets transaction execute --zone ocp4gcp-private-zone
-    ```
+```
        
 29. Let’s export the service account emails as these will be called inside the deployment manager templates of our master & worker nodes. In our demo, we will be using the same service account we created earlier:
 
@@ -355,6 +355,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
         export MASTER_SERVICE_ACCOUNT=(`gcloud iam service-accounts list --filter "email~^ocp4gcp-sa@${PROJECT_NAME}." --format json | jq -r '.[0].email'`)
         export WORKER_SERVICE_ACCOUNT=(`gcloud iam service-accounts list --filter "email~^ocp4gcp-sa@${PROJECT_NAME}." --format json | jq -r '.[0].email'`)
 ```
+
      If the above commands do not set the correct service account email ENV variable, you can try running `gcloud iam service-accounts list`, copy the email address for your service account from the output's email column and manually set it as the environment variable for both `MASTER_SERVICE_ACCOUNT` & `WORKER_SERVICE_ACCOUNT`.
      
 30. Now let’s create 2 google cloud buckets. One will be for storing the bootstrap.ign file for the bootstrap node, and the other will be the one to store the RedHat Coreos image that the cluster nodes will pull to boot up from.
@@ -376,11 +377,11 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
           
 31. Let’s set the CLUSTER_IMAGE env to be called later by the node creation commands.
 
-        ```export CLUSTER_IMAGE=(`gcloud compute images describe ${INFRA_ID}-rhcos-image --format json | jq -r .selfLink`)```
+        export CLUSTER_IMAGE=(`gcloud compute images describe ${INFRA_ID}-rhcos-image --format json | jq -r .selfLink`)
 
 32. Let’s set the BOOTSTRAP_IGN env to be called in the next step of bootstrap node creation.
        
-        ```export BOOTSTRAP_IGN=`gsutil signurl -d 1h service-account-key.json gs://${INFRA_ID}-bootstrap-ignition/bootstrap.ign | grep "^gs:" | awk '{print $5}'` ```
+        export BOOTSTRAP_IGN=`gsutil signurl -d 1h service-account-key.json gs://${INFRA_ID}-bootstrap-ignition/bootstrap.ign | grep "^gs:" | awk '{print $5}'`
 
 33. Now we create the bootstrap node itself using the relevant Deployment Manager template. The below commands will create the bootstrap node, a public IP for it, and an empty instance group for the bootstrap node:
     1. Create the `.yaml` config file for the bootstrap node deployment:
@@ -410,7 +411,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
     
     2. Run the command to create the bootstrap node.
 
-           ```gcloud deployment-manager deployments create ${INFRA_ID}-bootstrap --config 04_bootstrap.yaml```
+         gcloud deployment-manager deployments create ${INFRA_ID}-bootstrap --config 04_bootstrap.yaml
            
         
 34. Now we need to manually add the bootstrap node to the new empty instance group and add it as part of the internal load balancer we created earlier. This is mandatory as the initial temporary bootstrap cluster is hosted on the bootstrap node.
@@ -423,7 +424,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 35. We now proceed with the master nodes creation. Note that we are using instance types e2-standard-4, but you can use any other type which suits you best. However please ensure the type you choose accommodates at least 16GB Memory and 4 vCPUs, as OCP will not be able to run the required containers on lower spec instance types. I have tried many times and it has usually failed or has been unstable.
     1. Set the env variable for the master ignition config file.
 
-           ```export MASTER_IGNITION=`cat install_dir/master.ign` ```
+           export MASTER_IGNITION=`cat install_dir/master.ign` 
 
     2. Create the `.yaml` config file for the master nodes deployment:
 ```
@@ -452,7 +453,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 ```      
       3. Run the command to create the master nodes:
     
-        ```gcloud deployment-manager deployments create ${INFRA_ID}-control-plane --config 05_control_plane.yaml```
+        gcloud deployment-manager deployments create ${INFRA_ID}-control-plane --config 05_control_plane.yaml
         
 36. Once the master nodes have been deployed, we also need to add them to their respective instance groups that were created earlier in the load balancer creation step:
 
@@ -516,7 +517,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
         Note: If you wish to deploy workers with 2 interfaces, replace the `type` parameter value with `07_worker_with_2_interfaces.py` AND add an extra property field named `additional_subnet` and set it's value to the output of the command `gcloud compute networks subnets describe <secondary_network_name> --region=${REGION} --format json | jq -r .selfLink` where `<secondary_network_name>` is the name of another VPC network to which you wish to attach your VMs to. 
      3. Run the command to create the worker nodes.
 
-            ```gcloud deployment-manager deployments create ${INFRA_ID}-worker --config 06_worker.yaml```
+            gcloud deployment-manager deployments create ${INFRA_ID}-worker --config 06_worker.yaml
 
 40. With the node deployments created, there should be 2 CSRs in a pending state, we need to approve these. Once we approve the first 2, there will be 2 additional CSRs generated by those nodes, therefore, 4 CSRs (in sequence of 2 CSRs each) in total that we must approve.
 
@@ -595,11 +596,11 @@ Once this is done, run a `watch oc get co`, and you should start seeing all your
 43. Now that our cluster is entirely setup, we still cannot access the UI externally since it is a private cluster and only configured to expose it internally within the GCP network. For this, we will configure a reverse proxy on our bastion host:
     1. Install the haproxy package.
                 
-           ```sudo apt install haproxy -y ```
+           apt install haproxy -y 
   
     2. Open the haproxy.cfg file to make some configuration changes.
 
-           ```vi /etc/haproxy/haproxy.cfg```
+           vi /etc/haproxy/haproxy.cfg
  
     3. Add the following section in the end, and save it:
 
