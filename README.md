@@ -311,7 +311,8 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
 
 25. Now we create the internal loadbalancer component that will be used for api related communication by the cluster nodes. The following commands will create the load balancer, its corresponding health check component, as well as the backend empty instance groups into which the master nodes will be put into at the time of Master nodes creation in a later step.
-    1. Create the `.yaml` file
+    
+	1. Create the `.yaml` file
 
 ```
            cat <<EOF >02_infra.yaml
@@ -332,7 +333,7 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
            EOF
 ```
 
-    2. Create the corresponding GCP object:
+    	2. Create the corresponding GCP object:
     
         gcloud deployment-manager deployments create ${INFRA_ID}-infra --config 02_infra.yaml
            
