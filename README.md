@@ -222,9 +222,9 @@ Once we have our worker nodes up and running, we will configure a reverse proxy 
 
         git clone https://github.com/cloudcafetech/OCP4X-GCP-UPI.git
         
-    Also let's copy the Deployment Manager Templates (i.e the .py files, to the current working directory)
+    Also let's copy scripts (i.e the .py files, to the current working directory)
     
-        cp ~/OCP4X-GCP-UPI/deployment_manager_templates/* ~/ 
+        cp ~/OCP4X-GCP-UPI/scripts/* ~/ 
         
 15. Create an installation directory which will be used to generate the manifests & ignition config files.
 
